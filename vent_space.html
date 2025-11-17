@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Emotional Vent Space — Safe, Anonymous</title>
+<style>
+  :root{
+    --bg:#f3f7f6;
+    --card:#ffffff;
+    --muted:#6b7280;
+    --accent:#7dd3fc;
+    --accent-2:#a7f3d0;
+    --danger:#ef4444;
+    --shadow: 0 6px 18px rgba(16,24,40,0.06);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial;
+  }
+
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;
+    background:linear-gradient(180deg,var(--bg) 0%, #eef7fb 100%);
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:flex-start;
+    padding:24px 24px 900px 24px;
+    -webkit-font-smoothing:antialiased;
+  }
+
+  .container{
+    width:100%;
+    max-width:880px;
+    background:transparent;
+  }
+
+
+  .card{
+    background: transparent;
+    border-radius:14px;
+    padding:16px;
+    box-shadow:none;
+    border:1px solid rgba(0,0,0,0.02);
+  }
+
+.glass {
+  backdrop-filter: blur(16px);
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.25);
+}
+.modal-overlay {
+  position: fixed; inset:0;
+  background: rgba(0,0,0,0.35);
+  display:none; align-items:center; justify-content:center;
+  padding:20px;
+}
+.modal {
+  width:100%; max-width:420px;
+  padding:20px;
+  border-radius:16px;
+  box-shadow:0 8px 30px rgba(0,0,0,0.12);
+}
+#guidelinesModal { display:none; }
+
+  /* Form */
+  form#ventForm{display:flex;flex-direction:column;gap:12px}
+  label{font-size:13px;color:var(--muted)}
+  textarea{
+    min-height:100px;resize:vertical;padding:12px;border-radius:10px;border:1px solid #e6eef2;
+    font-size:15px;background:linear-gradient(180deg,#ffffff,#fbffff);
+  }
+  .row{display:flex;gap:8px;align-items:center}
+  .emoji-row{display:flex;gap:6px;flex-wrap:wrap}
+  button, .pill {
+    border:0;padding:8px 12px;border-radius:10px;background:linear-gradient(90deg,#fff,#fbfeff);
+    box-shadow: 0 2px 6px rgba(8,15,20,0.04);cursor:pointer;font-size:14px;
+  }
+  button.primary{background:linear-gradient(90deg,var(--accent),var(--accent-2));color:#042;border-radius:12px;font-weight:600}
+  .small{font-size:13px;color:var(--muted)}
+  .muted{color:var(--muted)}
+  .danger{color:var(--danger)}
+  .hint{font-size:12px;color:var(--muted)}
+
+  /* Feed */
+  .feed{
+    display:flex;flex-direction:column;gap:18px; margin-top:6px;
+  }
+  .post{
+    padding:16px 18px;border-radius:12px;background:linear-gradient(180deg,#fff,#fcfffe);
+    border:1px solid #edf6f5; display:flex;flex-direction:column;gap:6px;align-items:flex-start;
+    transform-origin:left top;opacity:1;transition:all 240ms cubic-bezier(.2,.9,.25,1);
+    position: relative;
+  }
+  .post.enter{opacity:0; transform: translateY(-8px) scale(.995)}
+  .post.leave{opacity:0; transform: translateY(8px) scale(.995);height:0;padding:0;margin:0;border-width:0}
+
+  .post .emoji{font-size:26px;line-height:1.1}
+  .emoji-badge {
+    font-size: 18px;
+    opacity: 0.9;
+    margin-left: 8px;
+  }
+  .emoji-start {
+    font-size: 22px;
+    flex-shrink: 0;
+  }
+  .post-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    width: 100%;
+  }
+  .post .text{flex:1;white-space:pre-wrap;font-size:15px;color:#0b2730}
+  .meta{font-size:12px;color:var(--muted);align-self:flex-end}
+
+  .toolbar{display:flex;gap:8px;align-items:center;justify-content:space-between}
+  .search{flex:1;display:flex;gap:8px;align-items:center}
+  input[type="search"]{
+    width:100%;padding:8px;border-radius:10px;border:1px solid #e6eef2;background:white;
+  }
+
+  /* tiny accessibility helpers */
+  .visually-hidden{position:absolute !important;height:1px;width:1px;overflow:hidden;clip:rect(1px,1px,1px,1px);white-space:nowrap}
+  .alert{padding:10px;border-radius:8px;font-size:14px}
+  .alert.success{background:#ecfdf5;color:#044; border:1px solid #d1fae5}
+  .alert.error{background:#ffefef;color:#5b0b0b;border:1px solid #ffcccc}
+
+  footer.small{margin-top:22px;color:var(--muted);font-size:12px}
+  /* comment bubbles and reopen button */
+  .comment {
+    background:#ffffff;
+    border:1px solid #e6e6e6;
+    padding:6px 10px;
+    border-radius:10px;
+    font-size:13px;
+    margin-bottom:6px;
+  }
+  .comment-input {
+    width:100%;
+    padding:8px;
+    border-radius:10px;
+    border:1px solid #d9e1e3;
+    box-sizing:border-box;
+  }
+  .comment-count { font-size:13px; color:var(--muted); }
+
+  /* animated comments collapse */
+  .comments-section {
+    max-height: 0px;
+    overflow: hidden;
+    transition: max-height 300ms cubic-bezier(.2,.9,.25,1), opacity 200ms ease;
+    opacity: 0;
+  }
+
+  /* Heading animations */
+  @keyframes slideUpFade {
+    from { transform: translateY(10px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+  }
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
+  }
+  header h1#title {
+    animation: slideUpFade 600ms cubic-bezier(.2,.9,.25,1) both;
+    font-size:28px;
+    letter-spacing:0.2px;
+  }
+  header p.lead {
+    animation: slideUpFade 700ms cubic-bezier(.2,.9,.25,1) both;
+    animation-delay: 120ms;
+    color: var(--muted);
+  }
+  /* typing effect for title */
+  .title-text { display:inline-block; overflow:hidden; white-space:nowrap; vertical-align:middle; }
+  .title-caret { display:inline-block; width:2px; height:1em; background:transparent; vertical-align:middle; margin-left:6px; }
+  .title-text::after { content: ''; display:inline-block; width:2px; height:1em; background:#042; margin-left:8px; vertical-align:middle; animation: blink 1000ms steps(2,start) infinite; }
+  @keyframes blink { 50% { opacity: 0 } }
+  /* footer removed — restore normal spacing */
+  .container { padding-bottom: 40px; }
+  .feed { padding-bottom: 36px; }
+</style>
+</head>
+<body>
+  <main class="container" aria-labelledby="title">
+    <header style="width:100%;text-align:center;margin-bottom:20px;">
+    <h1 id="title" style="margin-top:10px;"><span class="title-text">Emotional Vent Space</span></h1>
+    <p class="lead">A calm, anonymous place to share feelings. Be kind — this is a safe space.</p>
+    <button id="openModal" class="primary" style="height:40px;border-radius:14px;font-size:22px;display:inline-flex;align-items:center;gap:6px;padding:8px 16px;">
+      📩
+    </button>
+  </header>
+
+    <section class="grid" aria-live="polite">
+      <!-- Left: Feed -->
+      <div>
+        <div class="card" role="region" aria-label="Live vent feed">
+          <div class="toolbar" style="margin-bottom:8px">
+            <div style="display:flex;gap:8px;align-items:center">
+              <strong>Live feed</strong>
+              <span class="small muted" id="countLabel">0 posts</span>
+            </div>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label for="searchInput" class="visually-hidden">Search posts</label>
+              <input id="searchInput" type="search" placeholder="Filter…" aria-label="Filter posts">
+              <button class="pill" id="clearAll" title="Clear all posts" aria-label="Clear all posts">Clear</button>
+            </div>
+          </div>
+
+          <div id="feed" class="feed" aria-live="polite" aria-atomic="false">
+            <!-- posts go here -->
+          </div>
+
+        </div>
+
+        <!-- Contact card below the live feed -->
+        <div class="card" id="contactCard" style="margin-top:12px;">
+          <div style="font-weight:600;margin-bottom:6px;">Contact Me</div>
+          <div class="small muted">Lalith Aditya<br/>adiaditya7907@gmail.com</div>
+          <div style="margin-top:6px;font-size:13px;">
+            <a href="https://www.linkedin.com/in/lalithaditya/" target="_blank" rel="noopener" style="text-decoration:underline;color:inherit;margin-right:10px;">LinkedIn</a>
+            <a href="https://github.com/Nightyelf2403" target="_blank" rel="noopener" style="text-decoration:underline;color:inherit;">GitHub</a>
+          </div>
+
+          <div style="margin-top:12px;font-weight:600;">Tell us how I did</div>
+          <div class="rating-row" id="contactRatingRow" style="margin-top:8px;">
+            <div class="stars" id="contactStars"></div>
+            <div class="rating-info" id="contactAvg" style="margin-left:8px;"></div>
+          </div>
+
+          <div style="margin-top:8px;">
+            <textarea id="contactReview" placeholder="Leave a short review (optional)" style="width:100%;min-height:80px;padding:8px;border-radius:8px;border:1px solid #e6eef2;"></textarea>
+          </div>
+          <div style="display:flex;justify-content:flex-end;margin-top:8px;">
+            <button id="sendReviewBtn" class="primary">Send review</button>
+          </div>
+        </div>
+
+      </div>
+
+    </section>
+  </main>
+
+<div id="modalOverlay" class="modal-overlay">
+  <div class="modal glass">
+    <h2 style="margin-top:0;font-size:18px;">Share your thoughts</h2>
+    <textarea id="modalMessage" placeholder="It's okay to be honest..." style="width:100%;min-height:110px;padding:12px;border-radius:12px;border:1px solid #e5e8ea;"></textarea>
+
+    <div style="margin-top:10px;font-size:14px;">Add an emoji (optional)</div>
+    <div id="modalEmojiRow" class="emoji-row" style="margin-top:6px;">
+      <button type="button" class="pill" data-emoji="🙂">🙂</button>
+      <button type="button" class="pill" data-emoji="😔">😔</button>
+      <button type="button" class="pill" data-emoji="😡">😡</button>
+      <button type="button" class="pill" data-emoji="😅">😅</button>
+      <button type="button" class="pill" data-emoji="🫶">🫶</button>
+      <button type="button" class="pill" data-emoji="🤯">🤯</button>
+      <button type="button" class="pill" id="modalEmojiClear">✖</button>
+    </div>
+
+    <div style="margin-top:14px;font-size:12px;color:#555;">
+      By posting this you accept our
+      <span id="openGuidelines" style="text-decoration:underline;cursor:pointer;">Community Guidelines</span>
+    </div>
+
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;gap:8px;">
+      <button id="closeModal" class="pill">Cancel</button>
+      <button id="submitModal" class="primary">Post</button>
+    </div>
+  </div>
+</div>
+
+<div id="guidelinesModal" class="modal-overlay">
+  <div class="modal glass" style="max-width:460px;">
+    <h2 style="margin-top:0;font-size:18px;">Community Guidelines</h2>
+    <ul style="font-size:14px;color:#444;line-height:1.4;">
+      <li>Be kind and respectful.</li>
+      <li>No hate speech or explicit threats.</li>
+      <li>Do not include personal information.</li>
+      <li>This is not a counseling or crisis service.</li>
+    </ul>
+    <div style="display:flex;justify-content:flex-end;margin-top:14px;">
+      <button id="closeGuidelines" class="primary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* --------------------------
+  Simple anonymous vent app
+   - localStorage persistence
+   - basic moderation (bad word block)
+   - accessible announcements
+   - timestamps, emoji support
+   - subtle animations
+----------------------------*/
+
+ (function(){
+  const STORAGE_KEY = 'vent_space_posts_v1';
+  const feedEl = document.getElementById('feed');
+  const countLabel = document.getElementById('countLabel');
+  const searchInput = document.getElementById('searchInput');
+  const clearAllBtn = document.getElementById('clearAll');
+  const alertBox = (function(){ let e = document.getElementById('alertBox'); if(!e){ e = document.createElement('div'); e.id = 'alertBox'; e.className = 'visually-hidden'; document.body.appendChild(e);} return e; })();
+
+  // VERY simple banned words list (for demo). Expand as needed.
+  const banned = ['kill','suicide','rape','fuckyou','idiot','hate']; // lowercase
+  // We will block posts that include a banned word; in real app you'd handle differently.
+
+  function escapeHtml(str){
+    return str.replaceAll('&','&amp;').replaceAll('<','&lt;').replaceAll('>','&gt;').replaceAll('"','&quot;');
+  }
+
+  function nowISO(){ return new Date().toISOString(); }
+
+  function loadPosts(){
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : [];
+    } catch(e){ return []; }
+  }
+
+  function savePosts(list){
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(list));
+  }
+
+  function formatTime(iso){
+    const d = new Date(iso);
+    const relative = timeAgo(d);
+    return relative + ' • ' + d.toLocaleString();
+  }
+
+  function timeAgo(d){
+    const s = Math.floor((Date.now() - d.getTime())/1000);
+    if (s < 60) return s + 's ago';
+    if (s < 3600) return Math.floor(s/60) + 'm ago';
+    if (s < 86400) return Math.floor(s/3600) + 'h ago';
+    return Math.floor(s/86400) + 'd ago';
+  }
+
+  function matchesBanned(text){
+    const t = text.toLowerCase();
+    return banned.some(b => {
+      const rx = new RegExp('\\b'+escapeRegExp(b)+'\\b','i');
+      return rx.test(t);
+    });
+  }
+
+  function escapeRegExp(s){ return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  function showAlert(message, type='success'){
+    alertBox.className = 'alert ' + (type==='error' ? 'error' : 'success');
+    alertBox.textContent = message;
+    alertBox.classList.remove('visually-hidden');
+    alertBox.focus?.();
+    setTimeout(()=> {
+      alertBox.classList.add('visually-hidden');
+    }, 2500);
+  }
+
+  function render(posts){
+    // optional filter
+    const q = (searchInput.value || '').trim().toLowerCase();
+    feedEl.innerHTML = '';
+    const list = posts.slice().reverse().filter(p => {
+      if(!q) return true;
+      return p.text.toLowerCase().includes(q) || (p.emoji || '').includes(q);
+    });
+
+    countLabel.textContent = list.length + ' posts';
+    if(list.length === 0){
+      const empty = document.createElement('div');
+      empty.className = 'muted small';
+      empty.textContent = 'No posts yet. Be the first to share.';
+      feedEl.appendChild(empty);
+      return;
+    }
+
+    list.forEach(p => {
+      const post = document.createElement('article');
+      post.className = 'post enter';
+      post.setAttribute('role','article');
+      post.setAttribute('aria-label','vent item');
+
+      // Emoji at start of post
+      const emojiIcon = document.createElement('div');
+      emojiIcon.className = 'emoji-start';
+      emojiIcon.textContent = p.emoji || '👤';
+      emojiIcon.style.fontSize = '22px';
+
+      const textWrap = document.createElement('div');
+      textWrap.className = 'text';
+      textWrap.innerHTML = escapeHtml(p.text);
+
+      const headerRow = document.createElement('div');
+      headerRow.style.display = 'flex';
+      headerRow.style.alignItems = 'center';
+      headerRow.style.gap = '10px';
+      headerRow.style.width = '100%';
+      headerRow.appendChild(emojiIcon);
+      headerRow.appendChild(textWrap);
+
+      const emojiWrap = document.createElement('div');
+      emojiWrap.className = 'emoji-badge';
+      emojiWrap.textContent = p.emoji || '👤';
+
+      const footer = document.createElement('div');
+      footer.className = 'post-footer';
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      meta.textContent = formatTime(p.ts);
+
+      footer.appendChild(meta);
+
+post.appendChild(headerRow);
+
+/* Icons directly under the text */
+const iconRow = document.createElement('div');
+iconRow.className = 'icon-row';
+iconRow.style.margin = "4px 0 4px 32px";
+iconRow.style.display = "flex";
+iconRow.innerHTML = `
+  <span class="icon-heart" style="cursor:pointer;display:inline-flex;align-items:center;gap:8px;">
+    <span class="heart-emoji">❤️</span>
+    <span class="heart-count">${p.likes || 0}</span>
+  </span>
+  <span class="icon-comment" style="cursor:pointer;margin-left:14px;display:inline-flex;align-items:center;gap:8px;">
+    <span>💬</span>
+    <span class="comment-count">${(p.comments && p.comments.length) || 0}</span>
+  </span>
+`;
+post.appendChild(iconRow);
+
+// heart toggle with animation and persistence
+const heartBtn = iconRow.querySelector('.icon-heart');
+const heartCountEl = iconRow.querySelector('.heart-count');
+
+heartBtn.addEventListener('click', () => {
+  const heartEmoji = heartBtn.querySelector('.heart-emoji');
+
+  // short pulse animation
+  heartEmoji.style.transition = 'transform 140ms ease';
+  heartEmoji.style.transform = 'scale(1.3)';
+  setTimeout(() => { heartEmoji.style.transform = ''; }, 180);
+
+  // toggle liked class for styling
+  heartBtn.classList.toggle('liked');
+
+  // update count and persist into posts array
+  const isLiked = heartBtn.classList.contains('liked');
+  let count = Number(heartCountEl.textContent || 0);
+  count = isLiked ? count + 1 : Math.max(0, count - 1);
+  heartCountEl.textContent = count;
+
+  // persist to posts array (find by id) and save
+  const existing = posts.find(x => x.id === p.id);
+  if (existing) {
+    existing.likes = count;
+    savePosts(posts);
+  }
+});
+
+/* Footer (timestamp + ending emoji) */
+post.appendChild(footer);
+
+/* Comments section (Option 1 bubble replies) */
+const commentsSection = document.createElement('div');
+commentsSection.className = 'comments-section';
+commentsSection.style.display = 'none';
+commentsSection.innerHTML = `
+  <div class="comments-list"></div>
+  <input class="comment-input" placeholder="Add a comment..." />
+`;
+// populate existing comments (persisted)
+if (Array.isArray(p.comments) && p.comments.length) {
+  const listEl = commentsSection.querySelector('.comments-list');
+  p.comments.forEach(c => {
+    const bubble = document.createElement('div');
+    bubble.className = 'comment';
+    bubble.textContent = '💬 ' + c;
+    listEl.appendChild(bubble);
+  });
+}
+// update comment count display if present
+const commentCountEl = iconRow.querySelector('.comment-count');
+if (commentCountEl) commentCountEl.textContent = (p.comments || []).length;
+post.appendChild(commentsSection);
+
+/* Toggle comments visibility with smooth animation */
+iconRow.querySelector('.icon-comment').addEventListener('click', () => {
+  const isOpen = commentsSection.classList.contains('open');
+  if (!isOpen) {
+    // open: make visible then expand to full height
+    commentsSection.style.display = 'block';
+    // ensure input is visible when opening
+    const input = commentsSection.querySelector('.comment-input');
+    if (input) input.style.display = 'block';
+    const h = commentsSection.scrollHeight;
+    // force a frame so transition occurs
+    requestAnimationFrame(() => {
+      commentsSection.classList.add('open');
+      commentsSection.style.maxHeight = h + 'px';
+    });
+  } else {
+    // close: collapse then hide
+    commentsSection.style.maxHeight = commentsSection.scrollHeight + 'px';
+    requestAnimationFrame(() => {
+      commentsSection.style.maxHeight = '0px';
+      commentsSection.classList.remove('open');
+    });
+    // after transition, hide to remove from flow
+    setTimeout(() => {
+      commentsSection.style.display = 'none';
+    }, 320);
+  }
+});
+
+/* Bubble comments */
+commentsSection.querySelector('.comment-input').addEventListener('keydown', e => {
+  if (e.key === "Enter" && e.target.value.trim()) {
+    const text = e.target.value.trim();
+    const bubble = document.createElement('div');
+    bubble.className = 'comment';
+    bubble.textContent = "💬 " + text;
+    commentsSection.querySelector('.comments-list').appendChild(bubble);
+
+    // persist comment into posts array
+    const existing = posts.find(x => x.id === p.id);
+    if (existing) {
+      existing.comments = existing.comments || [];
+      existing.comments.push(text);
+      savePosts(posts);
+      // update comment count UI
+      const cc = iconRow.querySelector('.comment-count');
+      if (cc) cc.textContent = existing.comments.length;
+    }
+
+    e.target.value = "";
+
+    // hide the input after posting
+    e.target.style.display = 'none';
+
+  }
+});
+
+/* Append and animate */
+feedEl.appendChild(post);
+requestAnimationFrame(()=> post.classList.remove('enter'));
+    });
+  }
+
+  // initial render
+  let posts = loadPosts();
+  render(posts);
+
+
+
+  // search/filter
+  searchInput.addEventListener('input', () => render(posts));
+
+  // clear all (destructive - request a confirm)
+  clearAllBtn.addEventListener('click', () => {
+    if(!confirm('Clear all posts from this browser? This cannot be undone.')) return;
+    posts = [];
+    savePosts(posts);
+    render(posts);
+    showAlert('All posts cleared.');
+  });
+
+  // simple housekeeping: automatically remove posts older than 180 days (configurable)
+  (function pruneOld(){
+    try{
+      const DAYS = 180;
+      const cutoff = Date.now() - DAYS*24*3600*1000;
+      const kept = posts.filter(p => new Date(p.ts).getTime() >= cutoff);
+      if(kept.length !== posts.length){
+        posts = kept;
+        savePosts(posts);
+        render(posts);
+      }
+    }catch(e){}
+  })();
+
+  // expose a small dev helper in console for testing
+  window.__VentSpace = {
+    getAll: () => JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'),
+    clear: () => { localStorage.removeItem(STORAGE_KEY); posts=[]; render(posts); }
+  };
+
+  // Modal logic
+  const modalOverlay = document.getElementById('modalOverlay');
+  const openModalBtn = document.getElementById('openModal');
+  const closeModalBtn = document.getElementById('closeModal');
+  const submitModalBtn = document.getElementById('submitModal');
+  const modalMessage = document.getElementById('modalMessage');
+  const modalEmojiRow = document.getElementById('modalEmojiRow');
+  const modalEmojiClear = document.getElementById('modalEmojiClear');
+  let modalEmoji = '';
+
+  openModalBtn.onclick = () => { modalOverlay.style.display = 'flex'; };
+  closeModalBtn.onclick = () => { modalOverlay.style.display = 'none'; modalMessage.value=''; modalEmoji=''; };
+
+  modalEmojiRow.querySelectorAll('button[data-emoji]').forEach(b=>{
+    b.onclick=()=>{
+      modalEmoji=b.dataset.emoji;
+      modalEmojiRow.querySelectorAll('button').forEach(btn => btn.style.boxShadow='none');
+      b.style.boxShadow = '0 3px 10px rgba(0,0,0,0.08) inset';
+    };
+  });
+  modalEmojiClear.onclick=()=>{
+    modalEmoji='';
+    modalEmojiRow.querySelectorAll('button').forEach(btn => btn.style.boxShadow='none');
+  };
+
+  submitModalBtn.onclick = () => {
+    const raw = (modalMessage.value || '').trim();
+    if(!raw){ alert('Please type something.'); return; }
+    if(matchesBanned(raw)){ alert('Message contains disallowed content.'); return; }
+    if(raw.length > 1000){ alert('Please shorten your message to under 1000 characters.'); return; }
+    const post = {
+      id:'p_'+Math.random().toString(36).slice(2,9),
+      text: raw,
+      emoji: modalEmoji || '👤',
+      ts: nowISO(),
+      likes: 0,
+      comments: []
+    };
+    posts.push(post); savePosts(posts); render(posts);
+    modalOverlay.style.display='none';
+    modalMessage.value=''; modalEmoji='';
+    modalEmojiRow.querySelectorAll('button').forEach(btn => btn.style.boxShadow='none');
+  };
+
+  // Guidelines modal
+  const guidelinesModal = document.getElementById('guidelinesModal');
+  document.getElementById('openGuidelines').onclick = () => { guidelinesModal.style.display='flex'; };
+  document.getElementById('closeGuidelines').onclick = () => { guidelinesModal.style.display='none'; };
+
+  // Typing animation for header title (reveals letters one-by-one)
+  (function animateTitle(){
+    const el = document.querySelector('.title-text');
+    if(!el) return;
+    const full = el.textContent.trim();
+    el.textContent = '';
+    let i = 0;
+    const interval = setInterval(()=>{
+      el.textContent += full[i] || '';
+      i++;
+      if(i > full.length){ clearInterval(interval); }
+    }, 45);
+  })();
+
+  // close main IIFE
+})();
+</script>
+<!-- Mailto fallback modal -->
+<div id="mailtoModal" class="modal-overlay" style="display:none;align-items:center;justify-content:center;">
+  <div class="modal" style="max-width:520px;">
+    <h3 style="margin-top:0">Send review</h3>
+    <p style="margin:6px 0 12px;color:var(--muted)">We couldn't open your mail app automatically. You can copy the prepared message and paste it into your email client.</p>
+    <textarea id="mailtoContent" style="width:100%;min-height:140px;padding:8px;border-radius:8px;border:1px solid #e6eef2;"></textarea>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px;">
+      <button id="mailtoCopy" class="pill">Copy</button>
+      <button id="mailtoClose" class="primary">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// Improved contact mail handler with visible modal fallback
+document.addEventListener('DOMContentLoaded', function(){
+  (function contactCardWire(){
+    const starsWrap = document.getElementById('contactStars');
+    const avgEl = document.getElementById('contactAvg');
+    const reviewEl = document.getElementById('contactReview');
+    const sendBtn = document.getElementById('sendReviewBtn');
+    const EMAIL = 'adiaditya7907@gmail.com';
+    if(!starsWrap || !sendBtn) return;
+
+    // build 5 interactive stars (transient only)
+    let contactRating = 0;
+    function renderContactStars(){
+      starsWrap.innerHTML = '';
+      for(let i=1;i<=5;i++){
+        const s = document.createElement('span');
+        s.className = 'star' + (i <= contactRating ? ' filled' : '');
+        s.innerHTML = '★';
+        s.dataset.value = i;
+        s.title = i + ' stars';
+        s.style.userSelect = 'none';
+        s.addEventListener('click', ()=>{
+          contactRating = Number(s.dataset.value);
+          renderContactStars();
+          avgEl.textContent = contactRating ? (contactRating + ' / 5') : '';
+        });
+        starsWrap.appendChild(s);
+      }
+      avgEl.textContent = contactRating ? (contactRating + ' / 5') : '';
+    }
+    renderContactStars();
+
+    // Modal elements
+    const mailtoModal = document.getElementById('mailtoModal');
+    const mailtoContent = document.getElementById('mailtoContent');
+    const mailtoCopy = document.getElementById('mailtoCopy');
+    const mailtoClose = document.getElementById('mailtoClose');
+
+    function showModalWithText(text){
+      if(!mailtoModal) return;
+      mailtoContent.value = text;
+      mailtoModal.style.display = 'flex';
+    }
+    function hideModal(){ if(mailtoModal) mailtoModal.style.display = 'none'; }
+
+    // attempt anchor click and location but always fallback to modal + clipboard
+    async function tryOpenMailto(mailto){
+      // attempt anchor click and location but always fallback to modal + clipboard
+      try{
+        const a = document.createElement('a');
+        a.href = mailto;
+        a.style.display = 'none';
+        a.target = '_self';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+      }catch(e){}
+
+      try{
+        window.location.href = mailto;
+      }catch(e){}
+
+      // copy mailto to clipboard for reliable fallback
+      try{
+        if(navigator.clipboard && navigator.clipboard.writeText){
+          await navigator.clipboard.writeText(mailto);
+        }
+      }catch(e){ /* ignore */ }
+      // always return false so caller shows the modal with copy instructions
+      return false;
+    }
+
+    sendBtn.addEventListener('click', async ()=>{
+      const reviewText = (reviewEl.value || '').trim();
+      const ratingText = contactRating ? (contactRating + ' / 5') : 'No rating';
+      const subject = encodeURIComponent('Vent Space Review');
+      const bodyText = 'Rating: ' + ratingText + '\n\nReview:\n' + reviewText + '\n\n--\nSent from Emotional Vent Space';
+      const body = encodeURIComponent(bodyText);
+      const mailto = 'mailto:' + EMAIL + '?subject=' + subject + '&body=' + body;
+
+      const opened = await tryOpenMailto(mailto);
+      if(opened){
+        if (typeof showAlert === 'function') showAlert('Opened your email client. Please send the message.');
+        return;
+      }
+
+      // opened === false -> show modal with full message and copy button
+      showModalWithText('To: ' + EMAIL + '\nSubject: Vent Space Review\n\n' + bodyText + '\n\n(If your mail program did not open, copy and paste the above into a new message.)');
+      if (typeof showAlert === 'function') showAlert('Mail client did not open — showing copy dialog.');
+    });
+
+    // modal buttons
+    if(mailtoCopy) mailtoCopy.addEventListener('click', async ()=>{
+      try{ await navigator.clipboard.writeText(mailtoContent.value); if (typeof showAlert === 'function') showAlert('Copied to clipboard. Paste into your email client.'); }catch(e){ if (typeof showAlert === 'function') showAlert('Copy failed — select the text and copy manually.','error'); }
+    });
+    if(mailtoClose) mailtoClose.addEventListener('click', ()=>{ hideModal(); });
+
+  })();
+});
+</script>
+</body>
+</html>
