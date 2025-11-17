@@ -82,11 +82,3 @@ Lalith Aditya
 📜 License
 
 MIT License © 2025 Lalith Aditya
-
----
-
-If you want:  
-✅ A more minimal version  
-✅ A more stylish emoji-heavy version  
-✅ A version tailored for job applications  
-just tell me **“make a minimalist version”** or **“make an ATS-friendly version”**.
